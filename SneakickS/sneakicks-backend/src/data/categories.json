@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Sneakers",
+    "description": "Giày thể thao và giày limited"
+  },
+  {
+    "id": 2,
+    "name": "Apparel",
+    "description": "Quần áo streetwear"
+  },
+  {
+    "id": 3,
+    "name": "Accessories",
+    "description": "Phụ kiện thời trang"
+  },
+  {
+    "id": 4,
+    "name": "Collectibles",
+    "description": "Đồ sưu tầm"
+  }
+]

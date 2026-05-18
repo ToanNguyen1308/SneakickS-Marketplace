@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "Air Jordan 4 Retro Lakers",
+    "brand": "Jordan",
+    "category": "Sneakers",
+    "category_id": 1,
+    "price": 285.0,
+    "lowestAsk": 280.0,
+    "highestBid": 270.0,
+    "size": "42",
+    "image": "https://example.com/images/jordan4-lakers.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Yeezy Slide Onyx",
+    "brand": "Adidas",
+    "category": "Sneakers",
+    "category_id": 1,
+    "price": 145.0,
+    "lowestAsk": 140.0,
+    "highestBid": 135.0,
+    "size": "43",
+    "image": "https://example.com/images/yeezy-slide-onyx.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Nike Kobe 6 Protro Reverse Grinch",
+    "brand": "Nike",
+    "category": "Sneakers",
+    "category_id": 1,
+    "price": 620.0,
+    "lowestAsk": 610.0,
+    "highestBid": 590.0,
+    "size": "42",
+    "image": "https://example.com/images/kobe6-reverse-grinch.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Supreme Box Logo Tee White",
+    "brand": "Supreme",
+    "category": "Apparel",
+    "category_id": 2,
+    "price": 110.0,
+    "lowestAsk": 105.0,
+    "highestBid": 95.0,
+    "size": "M",
+    "image": "https://example.com/images/supreme-box-logo.jpg"
+  },
+  {
+    "id": 5,
+    "name": "Essentials Hoodie Dark Oatmeal",
+    "brand": "Fear of God",
+    "category": "Apparel",
+    "category_id": 2,
+    "price": 150.0,
+    "lowestAsk": 145.0,
+    "highestBid": 130.0,
+    "size": "L",
+    "image": "https://example.com/images/essentials-hoodie.jpg"
+  },
+  {
+    "id": 6,
+    "name": "Casio G-Shock GA-2100",
+    "brand": "Casio",
+    "category": "Accessories",
+    "category_id": 3,
+    "price": 120.0,
+    "lowestAsk": 115.0,
+    "highestBid": 108.0,
+    "size": "One Size",
+    "image": "https://example.com/images/gshock-ga2100.jpg"
+  },
+  {
+    "id": 7,
+    "name": "New Era NY Yankees Cap",
+    "brand": "New Era",
+    "category": "Accessories",
+    "category_id": 3,
+    "price": 40.0,
+    "lowestAsk": 38.0,
+    "highestBid": 34.0,
+    "size": "7 1/4",
+    "image": "https://example.com/images/ny-cap.jpg"
+  },
+  {
+    "id": 8,
+    "name": "POP MART Skullpanda The Warmth",
+    "brand": "POP MART",
+    "category": "Collectibles",
+    "category_id": 4,
+    "price": 55.0,
+    "lowestAsk": 50.0,
+    "highestBid": 46.0,
+    "size": "One Size",
+    "image": "https://example.com/images/skullpanda.jpg"
+  },
+  {
+    "id": 9,
+    "name": "Pokemon Charizard EX Card",
+    "brand": "Pokemon",
+    "category": "Collectibles",
+    "category_id": 4,
+    "price": 320.0,
+    "lowestAsk": 315.0,
+    "highestBid": 300.0,
+    "size": "Card",
+    "image": "https://example.com/images/charizard-ex.jpg"
+  },
+  {
+    "id": 10,
+    "name": "New Balance 9060 Rain Cloud",
+    "brand": "New Balance",
+    "category": "Sneakers",
+    "category_id": 1,
+    "price": 230.0,
+    "lowestAsk": 225.0,
+    "highestBid": 210.0,
+    "size": "41",
+    "image": "https://example.com/images/nb-9060-rain-cloud.jpg"
+  }
+]
