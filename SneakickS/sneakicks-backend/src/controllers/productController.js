@@ -1,14 +1,22 @@
 import * as productModel from "../models/productModel.js";
 import * as bidModel from "../models/bidModel.js";
 import * as askModel from "../models/askModel.js";
+import { parsePagination, buildMeta } from "../utils/pagination.js";
 
 export const getAllProducts = async (req, res) => {
   const { brand, category, search } = req.query;
-  const result = await productModel.findAll({ brand, category, search });
+  const { page, limit, offset } = parsePagination(req.query);
+
+  const [data, total] = await Promise.all([
+    productModel.findAllPaged({ brand, category, search, limit, offset }),
+    productModel.countAll({ brand, category, search }),
+  ]);
+
   res.json({
     success: true,
-    count: result.length,
-    data: result,
+    count: data.length,
+    pagination: buildMeta(page, limit, total),
+    data,
   });
 };
 

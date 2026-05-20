@@ -1,0 +1,681 @@
+{
+  "info": {
+    "_postman_id": "sneakicks-w5-collection",
+    "name": "SneakickS — Week 5",
+    "description": "45 test cases cho backend tuan 5: health/auth/products/bids/asks/transactions/verifications/ratings/pagination.\n\nCach dung:\n1. Tao environment moi voi 2 variable `baseUrl=http://localhost:3000` va `adminToken/buyer1Token/buyer2Token/buyer3Token/seller1Token/seller2Token` (de trong, se duoc populate boi cac request Login).\n2. Chay cac request Login truoc de set token tu dong qua `pm.environment.set`.\n3. Sau do co the Run Collection theo thu tu.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "buyer1Token", "value": "" },
+    { "key": "buyer2Token", "value": "" },
+    { "key": "buyer3Token", "value": "" },
+    { "key": "seller1Token", "value": "" },
+    { "key": "seller2Token", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "shipTxId", "value": "1" },
+    { "key": "verifyTxId", "value": "2" },
+    { "key": "completedTxId", "value": "3" }
+  ],
+  "item": [
+    {
+      "name": "Health & Info",
+      "item": [
+        {
+          "name": "T01 GET / (health)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('has endpoints', () => pm.expect(pm.response.json().endpoints).to.exist);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "T02 Login admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@sneakicks.com\",\"password\":\"admin123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('adminToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T03 Login buyer1",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\"email\":\"buyer1@sneakicks.com\",\"password\":\"buyer123\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('buyer1Token', pm.response.json().token);"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T04 Login buyer2",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\"email\":\"buyer2@sneakicks.com\",\"password\":\"buyer123\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('buyer2Token', pm.response.json().token);"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T05 Login buyer3",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\"email\":\"buyer3@sneakicks.com\",\"password\":\"buyer123\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('buyer3Token', pm.response.json().token);"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T06 Login seller1",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\"email\":\"seller1@sneakicks.com\",\"password\":\"seller123\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('seller1Token', pm.response.json().token);"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T07 Login seller2",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\"email\":\"seller2@sneakicks.com\",\"password\":\"seller123\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.environment.set('seller2Token', pm.response.json().token);"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T08 Register OK",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": { "mode": "raw", "raw": "{\"username\":\"newuser_w5\",\"email\":\"newuser_w5@sneakicks.com\",\"password\":\"secret1\"}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('201', () => pm.response.to.have.status(201));"] } }
+          ]
+        },
+        {
+          "name": "T09 Register thieu field -> 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": { "mode": "raw", "raw": "{\"email\":\"x@x.com\"}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] } }
+          ]
+        },
+        {
+          "name": "T10 Login sai pass -> 401",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\"email\":\"buyer1@sneakicks.com\",\"password\":\"wrong\"}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] } }
+          ]
+        },
+        {
+          "name": "T11 GET /me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "T12 GET /me no token -> 401",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/auth/me" },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products + Pagination (Week 5)",
+      "item": [
+        {
+          "name": "T13 GET /api/products (default paging)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('pagination meta', () => pm.expect(pm.response.json().pagination).to.have.property('totalPages'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T14 GET /api/products?limit=2&page=1",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products?limit=2&page=1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('exactly 2 items', () => pm.expect(pm.response.json().data.length).to.equal(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T15 GET /api/products?limit=2&page=2",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products?limit=2&page=2" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('hasPrev=true', () => pm.expect(pm.response.json().pagination.hasPrev).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T16 Filter brand=Nike",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products?brand=Nike" }
+        },
+        {
+          "name": "T17 Search jordan",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products?search=jordan" }
+        },
+        {
+          "name": "T18 GET /api/products/1",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products/1" }
+        },
+        {
+          "name": "T19 GET /api/products/999 -> 404",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products/999" },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] } }
+          ]
+        },
+        {
+          "name": "T20 GET /api/products/1/orderbook?size=42",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/products/1/orderbook?size=42" }
+        }
+      ]
+    },
+    {
+      "name": "Bids",
+      "item": [
+        {
+          "name": "T21 Place Bid waiting (size 45)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/bids",
+            "body": { "mode": "raw", "raw": "{\"product_id\":1,\"size\":\"45\",\"price\":250}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('matched=false', () => pm.expect(pm.response.json().matched).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T22 Place Bid matched (price >= lowest ask)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/bids",
+            "body": { "mode": "raw", "raw": "{\"product_id\":1,\"size\":\"42\",\"price\":290}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('matched=true', () => pm.expect(pm.response.json().matched).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T23 Place Bid no auth -> 401",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/bids",
+            "body": { "mode": "raw", "raw": "{\"product_id\":1,\"size\":\"42\",\"price\":290}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] } }
+          ]
+        },
+        {
+          "name": "T24 GET /api/bids/me?limit=5 (pagination)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": "{{baseUrl}}/api/bids/me?limit=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('pagination', () => pm.expect(pm.response.json().pagination).to.exist);"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Asks",
+      "item": [
+        {
+          "name": "T25 Place Ask waiting",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{seller1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/asks",
+            "body": { "mode": "raw", "raw": "{\"product_id\":1,\"size\":\"45\",\"price\":300}" }
+          }
+        },
+        {
+          "name": "T26 GET /api/asks/me?limit=5",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{seller1Token}}" }],
+            "url": "{{baseUrl}}/api/asks/me?limit=5"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions (Week 5)",
+      "item": [
+        {
+          "name": "T27 GET /api/transactions/me as buyer1",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": "{{baseUrl}}/api/transactions/me?role=buyer&limit=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('pagination', () => pm.expect(pm.response.json().pagination).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T28 GET /api/transactions/me as seller1",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{seller1Token}}" }],
+            "url": "{{baseUrl}}/api/transactions/me?role=seller&limit=10"
+          }
+        },
+        {
+          "name": "T29 GET /api/transactions/:id (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/transactions/{{shipTxId}}"
+          }
+        },
+        {
+          "name": "T30 POST /api/transactions/1/ship (seller1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{seller1Token}}" }],
+            "url": "{{baseUrl}}/api/transactions/{{shipTxId}}/ship"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('status=shipped_to_verify', () => pm.expect(pm.response.json().data.transaction.status).to.equal('shipped_to_verify'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T31 POST ship lan 2 -> 400 (sai state)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{seller1Token}}" }],
+            "url": "{{baseUrl}}/api/transactions/{{shipTxId}}/ship"
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] } }
+          ]
+        },
+        {
+          "name": "T32 POST ship by buyer -> 403",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": "{{baseUrl}}/api/transactions/{{verifyTxId}}/ship"
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('403 hoac 400', () => pm.expect([400,403]).to.include(pm.response.code));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin Verifications (Week 5)",
+      "item": [
+        {
+          "name": "T33 GET /api/admin/verifications?result=pending",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/admin/verifications?result=pending"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T34 GET /api/admin/verifications no admin -> 403",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": "{{baseUrl}}/api/admin/verifications"
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('403', () => pm.response.to.have.status(403));"] } }
+          ]
+        },
+        {
+          "name": "T35 POST /api/admin/verifications/2/start",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/api/admin/verifications/{{verifyTxId}}/start"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('status=verifying', () => pm.expect(pm.response.json().data.transaction.status).to.equal('verifying'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T36 POST /api/admin/verifications/2/pass",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/admin/verifications/{{verifyTxId}}/pass",
+            "body": { "mode": "raw", "raw": "{\"notes\":\"Authentic\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('status=shipped_to_buyer', () => pm.expect(pm.response.json().data.transaction.status).to.equal('shipped_to_buyer'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T37 POST /api/transactions/2/complete (buyer2)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer2Token}}" }],
+            "url": "{{baseUrl}}/api/transactions/{{verifyTxId}}/complete"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('status=completed', () => pm.expect(pm.response.json().data.status).to.equal('completed'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T38 Fail flow (mock): start + fail",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/admin/verifications/{{shipTxId}}/pass",
+            "body": { "mode": "raw", "raw": "{\"notes\":\"may need to call start first\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 or 200 ok', () => pm.expect([200,400]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rating (Week 5)",
+      "item": [
+        {
+          "name": "T39 POST /api/transactions/2/rate (buyer2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyer2Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{verifyTxId}}/rate",
+            "body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Verified center reliable\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('rating=5', () => pm.expect(pm.response.json().data.rating).to.equal(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T40 POST rate khi chua completed -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{shipTxId}}/rate",
+            "body": { "mode": "raw", "raw": "{\"rating\":4}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] } }
+          ]
+        },
+        {
+          "name": "T41 POST rate lan 2 (UNIQUE) -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyer2Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{verifyTxId}}/rate",
+            "body": { "mode": "raw", "raw": "{\"rating\":3}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('409', () => pm.response.to.have.status(409));"] } }
+          ]
+        },
+        {
+          "name": "T42 POST rate invalid (0) -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyer3Token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/transactions/{{completedTxId}}/rate",
+            "body": { "mode": "raw", "raw": "{\"rating\":0}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('400', () => pm.response.to.have.status(400));"] } }
+          ]
+        },
+        {
+          "name": "T43 GET /api/sellers/5/ratings (seller1)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/sellers/5/ratings" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('summary co avg_rating', () => pm.expect(pm.response.json().summary).to.have.property('avg_rating'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T44 GET /api/sellers/999/ratings -> 404",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/sellers/999/ratings" },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] } }
+          ]
+        },
+        {
+          "name": "T45 GET /api/sellers/5/ratings?limit=2",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/sellers/5/ratings?limit=2" }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import * as bidModel from "../models/bidModel.js";
 import * as productModel from "../models/productModel.js";
 import { matchNewBid, buyNow } from "../services/matchingEngine.js";
+import { parsePagination, buildMeta } from "../utils/pagination.js";
 
 const validatePlaceBidBody = (body) => {
   const { product_id, size, price } = body || {};
@@ -84,8 +85,19 @@ export const buyNowBid = async (req, res) => {
 
 export const getMyBids = async (req, res) => {
   const status = req.query.status;
-  const data = await bidModel.findByUser(req.user.id, { status });
-  res.json({ success: true, count: data.length, data });
+  const { page, limit, offset } = parsePagination(req.query);
+
+  const [data, total] = await Promise.all([
+    bidModel.findByUserPaged(req.user.id, { status, limit, offset }),
+    bidModel.countByUser(req.user.id, { status }),
+  ]);
+
+  res.json({
+    success: true,
+    count: data.length,
+    pagination: buildMeta(page, limit, total),
+    data,
+  });
 };
 
 export const cancelBid = async (req, res) => {

@@ -1,6 +1,7 @@
 import * as askModel from "../models/askModel.js";
 import * as productModel from "../models/productModel.js";
 import { matchNewAsk, sellNow } from "../services/matchingEngine.js";
+import { parsePagination, buildMeta } from "../utils/pagination.js";
 
 const validatePlaceAskBody = (body) => {
   const { product_id, size, price } = body || {};
@@ -84,8 +85,19 @@ export const sellNowAsk = async (req, res) => {
 
 export const getMyAsks = async (req, res) => {
   const status = req.query.status;
-  const data = await askModel.findByUser(req.user.id, { status });
-  res.json({ success: true, count: data.length, data });
+  const { page, limit, offset } = parsePagination(req.query);
+
+  const [data, total] = await Promise.all([
+    askModel.findByUserPaged(req.user.id, { status, limit, offset }),
+    askModel.countByUser(req.user.id, { status }),
+  ]);
+
+  res.json({
+    success: true,
+    count: data.length,
+    pagination: buildMeta(page, limit, total),
+    data,
+  });
 };
 
 export const cancelAsk = async (req, res) => {

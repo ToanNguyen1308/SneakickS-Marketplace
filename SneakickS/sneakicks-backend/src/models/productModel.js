@@ -24,7 +24,7 @@ const SELECT_PRODUCT_BASE = `
   LEFT JOIN categories c ON c.id = p.category_id
 `;
 
-export const findAll = async ({ brand, category, search } = {}) => {
+const buildFilter = ({ brand, category, search } = {}) => {
   const where = [];
   const params = [];
 
@@ -45,13 +45,46 @@ export const findAll = async ({ brand, category, search } = {}) => {
     );
   }
 
+  return { where, params };
+};
+
+export const findAll = async ({ brand, category, search } = {}) => {
+  const { where, params } = buildFilter({ brand, category, search });
   const sql =
     SELECT_PRODUCT_BASE +
     (where.length ? ` WHERE ${where.join(" AND ")}` : "") +
     ` ORDER BY p.id ASC`;
-
   const { rows } = await query(sql, params);
   return rows;
+};
+
+export const findAllPaged = async ({
+  brand,
+  category,
+  search,
+  limit = 20,
+  offset = 0,
+} = {}) => {
+  const { where, params } = buildFilter({ brand, category, search });
+  params.push(limit, offset);
+  const sql =
+    SELECT_PRODUCT_BASE +
+    (where.length ? ` WHERE ${where.join(" AND ")}` : "") +
+    ` ORDER BY p.id ASC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  const { rows } = await query(sql, params);
+  return rows;
+};
+
+export const countAll = async ({ brand, category, search } = {}) => {
+  const { where, params } = buildFilter({ brand, category, search });
+  const sql = `
+    SELECT COUNT(*)::int AS total
+    FROM products p
+    LEFT JOIN categories c ON c.id = p.category_id
+    ${where.length ? ` WHERE ${where.join(" AND ")}` : ""}
+  `;
+  const { rows } = await query(sql, params);
+  return rows[0].total;
 };
 
 export const findById = async (id) => {
