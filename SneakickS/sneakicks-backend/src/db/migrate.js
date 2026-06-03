@@ -80,6 +80,28 @@ const SEED_TRANSACTIONS = [
   },
 ];
 
+/**
+ * Lich su gia cho product 1 (Air Jordan 4) trai deu ~30 ngay gan nhat,
+ * de bieu do gia (Charts tuan 6) co du lieu demo.
+ *   [so ngay truoc, gia]
+ */
+const SEED_PRICE_HISTORY = [
+  [29, 250.0],
+  [27, 255.0],
+  [25, 248.0],
+  [22, 262.0],
+  [20, 270.0],
+  [18, 265.0],
+  [15, 280.0],
+  [13, 275.0],
+  [11, 290.0],
+  [9, 285.0],
+  [6, 295.0],
+  [4, 288.0],
+  [2, 300.0],
+  [1, 296.0],
+];
+
 const log = (msg) => console.log(`[migrate] ${msg}`);
 
 const runSqlFile = async (filePath) => {
@@ -192,6 +214,27 @@ const seedTransactions = async () => {
   }
 };
 
+const seedPriceHistory = async () => {
+  log("Seeding historical transactions for price chart (product 1)...");
+  const usersRes = await query("SELECT id, username FROM users");
+  const userByName = Object.fromEntries(
+    usersRes.rows.map((u) => [u.username, u.id])
+  );
+  const buyerId = userByName.buyer1;
+  const sellerId = userByName.seller1;
+
+  for (const [daysAgo, price] of SEED_PRICE_HISTORY) {
+    await query(
+      `INSERT INTO transactions
+         (ask_id, bid_id, buyer_id, seller_id, product_id, size, price, status, created_at, updated_at)
+       VALUES (NULL, NULL, $1, $2, 1, '42', $3, 'completed',
+               NOW() - ($4 || ' days')::interval,
+               NOW() - ($4 || ' days')::interval)`,
+      [buyerId, sellerId, price, daysAgo]
+    );
+  }
+};
+
 const main = async () => {
   const args = process.argv.slice(2);
   const seedOnly = args.includes("--seed-only");
@@ -210,6 +253,7 @@ const main = async () => {
       await seedUsers();
       await seedOrderBook();
       await seedTransactions();
+      await seedPriceHistory();
       log("Seed completed successfully.");
     } else if (seedOnly) {
       log(`Running seed only: ${SEED_FILE}`);
@@ -217,6 +261,7 @@ const main = async () => {
       await seedUsers();
       await seedOrderBook();
       await seedTransactions();
+      await seedPriceHistory();
       log("Seed completed successfully.");
     }
 

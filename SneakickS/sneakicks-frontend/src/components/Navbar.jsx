@@ -25,7 +25,9 @@ const Navbar = () => {
           <NavLink to="/" end className={navItemClass}>
             Home
           </NavLink>
-          {isAuthenticated && (
+          {/* Cac muc giao dich chi danh cho user thuong; admin la nguoi van hanh
+              trung tam xac thuc nen khong hien My Bids / My Asks / Orders / Wishlist. */}
+          {isAuthenticated && !isAdmin && (
             <>
               <NavLink to="/me/bids" className={navItemClass}>
                 My Bids
@@ -35,6 +37,9 @@ const Navbar = () => {
               </NavLink>
               <NavLink to="/me/orders" className={navItemClass}>
                 Orders
+              </NavLink>
+              <NavLink to="/me/wishlist" className={navItemClass}>
+                Wishlist
               </NavLink>
             </>
           )}

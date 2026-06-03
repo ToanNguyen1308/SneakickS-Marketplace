@@ -2,6 +2,7 @@ import * as askModel from "../models/askModel.js";
 import * as productModel from "../models/productModel.js";
 import { matchNewAsk, sellNow } from "../services/matchingEngine.js";
 import { parsePagination, buildMeta } from "../utils/pagination.js";
+import { notifyProduct } from "../realtime/notify.js";
 
 const validatePlaceAskBody = (body) => {
   const { product_id, size, price } = body || {};
@@ -40,6 +41,9 @@ export const placeAsk = async (req, res) => {
     price: priceNumber,
   });
 
+  // Order book thay doi -> push real-time toi nguoi dang xem san pham.
+  await notifyProduct(productId);
+
   return res.status(201).json({
     success: true,
     matched: result.matched,
@@ -71,6 +75,8 @@ export const sellNowAsk = async (req, res) => {
     productId,
     size: String(size),
   });
+
+  await notifyProduct(productId);
 
   return res.status(201).json({
     success: true,
@@ -123,6 +129,9 @@ export const cancelAsk = async (req, res) => {
   }
 
   const cancelled = await askModel.cancel(id, req.user.id);
+
+  await notifyProduct(existing.product_id);
+
   res.json({
     success: true,
     message: "Ask cancelled",

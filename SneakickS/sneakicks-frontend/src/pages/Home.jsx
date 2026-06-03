@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import * as productsApi from "../api/products";
 import * as categoriesApi from "../api/categories";
+import * as followsApi from "../api/follows";
 import ProductCard from "../components/ProductCard.jsx";
 import Pagination from "../components/Pagination.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const Home = () => {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const canFollow = isAuthenticated && !isAdmin;
+
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [followedIds, setFollowedIds] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     brand: "",
@@ -22,6 +28,39 @@ const Home = () => {
       setCategories(data.data || []);
     });
   }, []);
+
+  const loadFollows = useCallback(() => {
+    if (!canFollow) {
+      setFollowedIds(new Set());
+      return;
+    }
+    followsApi
+      .myFollows({ limit: 100 })
+      .then(({ data }) => {
+        setFollowedIds(new Set((data.data || []).map((p) => p.id)));
+      })
+      .catch(() => setFollowedIds(new Set()));
+  }, [canFollow]);
+
+  useEffect(() => {
+    loadFollows();
+  }, [loadFollows]);
+
+  const toggleFollow = async (product, next) => {
+    // Optimistic update
+    setFollowedIds((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(product.id);
+      else s.delete(product.id);
+      return s;
+    });
+    try {
+      if (next) await followsApi.follow(product.id);
+      else await followsApi.unfollow(product.id);
+    } catch {
+      loadFollows(); // rollback ve trang thai that neu loi
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -87,7 +126,12 @@ const Home = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard
+              key={p.id}
+              product={p}
+              followed={followedIds.has(p.id)}
+              onToggleFollow={canFollow ? toggleFollow : undefined}
+            />
           ))}
         </div>
       )}

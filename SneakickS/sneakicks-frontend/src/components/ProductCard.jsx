@@ -5,12 +5,38 @@ const PLACEHOLDER = "https://placehold.co/400x300?text=Sneakicks";
 const formatMoney = (value) =>
   value === null || value === undefined ? "—" : `$${Number(value).toFixed(2)}`;
 
-const ProductCard = ({ product }) => {
+/**
+ * ProductCard
+ *  - Week 6: nhan them `followed` + `onToggleFollow` (tuy chon) de hien nut sao Wishlist.
+ *    Nut sao goi preventDefault/stopPropagation de khong dieu huong khi bam.
+ */
+const ProductCard = ({ product, followed = false, onToggleFollow }) => {
+  const handleStar = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFollow?.(product, !followed);
+  };
+
   return (
     <Link
       to={`/products/${product.id}`}
-      className="card hover:shadow-md transition-shadow"
+      className="card relative hover:shadow-md transition-shadow"
     >
+      {onToggleFollow && (
+        <button
+          type="button"
+          onClick={handleStar}
+          aria-label={followed ? "Bo theo doi" : "Theo doi"}
+          title={followed ? "Bo theo doi" : "Theo doi"}
+          className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg leading-none shadow transition-colors ${
+            followed
+              ? "bg-amber-400 text-white"
+              : "bg-white/90 text-slate-400 hover:text-amber-500"
+          }`}
+        >
+          {followed ? "★" : "☆"}
+        </button>
+      )}
       <div className="aspect-[4/3] w-full overflow-hidden rounded bg-slate-100 mb-3">
         <img
           src={product.image || PLACEHOLDER}

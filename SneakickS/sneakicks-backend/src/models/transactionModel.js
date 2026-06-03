@@ -94,6 +94,46 @@ export const findByUser = async (userId, role = "all") => {
 };
 
 /**
+ * Keyset pagination — Week 6.
+ * Sap xep theo t.id DESC (moi nhat truoc), cursor la "id < $cursor".
+ * Lay limit+1 row de phat hien hasNext.
+ */
+export const findByUserKeyset = async (
+  userId,
+  { role = "all", status, limit = 20, cursor = null } = {}
+) => {
+  const filter = buildUserFilter(role);
+  const params = [userId, ...filter.values];
+  let sql = `
+      SELECT t.id, t.ask_id, t.bid_id, t.buyer_id, t.seller_id,
+             t.product_id, t.size, t.price, t.status,
+             t.created_at, t.updated_at,
+             p.name      AS product_name,
+             p.brand     AS product_brand,
+             p.image_url AS product_image,
+             ub.username AS buyer_username,
+             us.username AS seller_username
+      FROM transactions t
+      LEFT JOIN products p ON p.id = t.product_id
+      LEFT JOIN users ub   ON ub.id = t.buyer_id
+      LEFT JOIN users us   ON us.id = t.seller_id
+      WHERE ${filter.sql}
+  `;
+  if (status) {
+    params.push(status);
+    sql += ` AND t.status = $${params.length}`;
+  }
+  if (cursor) {
+    params.push(cursor);
+    sql += ` AND t.id < $${params.length}`;
+  }
+  params.push(limit + 1);
+  sql += ` ORDER BY t.id DESC LIMIT $${params.length}`;
+  const { rows } = await query(sql, params);
+  return rows;
+};
+
+/**
  * updateStatus — UPDATE atomic kem tra audit log o controller.
  * Tra ve null neu khong match WHERE (sai status / khong ton tai).
  */

@@ -8,6 +8,7 @@ import Register from "./pages/Register.jsx";
 import MyBids from "./pages/MyBids.jsx";
 import MyAsks from "./pages/MyAsks.jsx";
 import MyOrders from "./pages/MyOrders.jsx";
+import Wishlist from "./pages/Wishlist.jsx";
 import AdminVerifications from "./pages/AdminVerifications.jsx";
 
 const App = () => (
@@ -40,6 +41,14 @@ const App = () => (
           element={
             <ProtectedRoute>
               <MyOrders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/me/wishlist"
+          element={
+            <ProtectedRoute>
+              <Wishlist />
             </ProtectedRoute>
           }
         />

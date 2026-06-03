@@ -10,6 +10,12 @@ export default defineConfig({
         target: "http://localhost:3000",
         changeOrigin: true,
       },
+      // WebSocket cho Socket.IO (real-time order book)
+      "/socket.io": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 });

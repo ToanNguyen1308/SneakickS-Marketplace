@@ -2,7 +2,13 @@ import { withTransaction } from "../config/db.js";
 import * as transactionModel from "../models/transactionModel.js";
 import * as verificationModel from "../models/verificationModel.js";
 import * as ratingModel from "../models/ratingModel.js";
-import { parsePagination, buildMeta } from "../utils/pagination.js";
+import {
+  parsePagination,
+  buildMeta,
+  parseCursor,
+  parseLimit,
+  buildKeysetMeta,
+} from "../utils/pagination.js";
 
 /**
  * transactionController — Week 5
@@ -21,10 +27,35 @@ const canViewTransaction = (transaction, user) => {
 };
 
 export const getMyTransactions = async (req, res) => {
-  const { page, limit, offset } = parsePagination(req.query);
   const role = VALID_ROLES.includes(req.query.role) ? req.query.role : "all";
   const status = req.query.status || null;
 
+  // Keyset mode: kich hoat khi co `?cursor=` hoac `?mode=keyset`.
+  const keysetRequested =
+    req.query.cursor !== undefined || req.query.mode === "keyset";
+
+  if (keysetRequested) {
+    const cursor = parseCursor(req.query);
+    const limit = parseLimit(req.query);
+    const rows = await transactionModel.findByUserKeyset(req.user.id, {
+      role,
+      status,
+      limit,
+      cursor,
+    });
+    const { pageRows, meta } = buildKeysetMeta(limit, rows, (r) => r.id);
+    return res.json({
+      success: true,
+      mode: "keyset",
+      role,
+      status,
+      count: pageRows.length,
+      pagination: meta,
+      data: pageRows,
+    });
+  }
+
+  const { page, limit, offset } = parsePagination(req.query);
   const [data, total] = await Promise.all([
     transactionModel.findByUserPaged(req.user.id, {
       role,
@@ -37,6 +68,7 @@ export const getMyTransactions = async (req, res) => {
 
   res.json({
     success: true,
+    mode: "offset",
     role,
     status,
     count: data.length,

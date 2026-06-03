@@ -1,0 +1,350 @@
+{
+  "info": {
+    "name": "SneakickS W6 - Wishlist + Charts + Keyset",
+    "description": "Tuan 6: Wishlist/Follow, Price History (Charts), Keyset pagination. Chay Login truoc de set token, sau do chay theo thu tu.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "W6-T01 Login buyer1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('buyer1Token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"buyer1@sneakicks.com\",\n  \"password\": \"buyer123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "W6-T02 Login seller1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('seller1Token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller1@sneakicks.com\",\n  \"password\": \"seller123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist / Follow",
+      "item": [
+        {
+          "name": "W6-T03 Follow product 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 or 200', () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "pm.test('following=true', () => pm.expect(pm.response.json().following).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/follows", "host": ["{{baseUrl}}"], "path": ["api", "follows"] }
+          }
+        },
+        {
+          "name": "W6-T04 Follow again (idempotent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 (already following)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/follows", "host": ["{{baseUrl}}"], "path": ["api", "follows"] }
+          }
+        },
+        {
+          "name": "W6-T05 Follow status (true)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('following=true', () => pm.expect(pm.response.json().following).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/follows/1/status", "host": ["{{baseUrl}}"], "path": ["api", "follows", "1", "status"] }
+          }
+        },
+        {
+          "name": "W6-T06 My follows",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('has pagination', () => pm.expect(pm.response.json()).to.have.property('pagination'));",
+                  "pm.test('contains product 1', () => pm.expect(pm.response.json().data.map(p=>p.id)).to.include(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/me/follows?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "users", "me", "follows"], "query": [{ "key": "limit", "value": "20" }] }
+          }
+        },
+        {
+          "name": "W6-T07 Follow no auth (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/follows", "host": ["{{baseUrl}}"], "path": ["api", "follows"] }
+          }
+        },
+        {
+          "name": "W6-T08 Follow product not found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": 9999\n}" },
+            "url": { "raw": "{{baseUrl}}/api/follows", "host": ["{{baseUrl}}"], "path": ["api", "follows"] }
+          }
+        },
+        {
+          "name": "W6-T09 Unfollow product 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('following=false', () => pm.expect(pm.response.json().following).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/follows/1", "host": ["{{baseUrl}}"], "path": ["api", "follows", "1"] }
+          }
+        },
+        {
+          "name": "W6-T10 Unfollow when not following (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/follows/1", "host": ["{{baseUrl}}"], "path": ["api", "follows", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Charts (Price History)",
+      "item": [
+        {
+          "name": "W6-T11 Price history product 1 (30d)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));",
+                  "pm.test('day has avg_price', () => { const d = pm.response.json().data; if (d.length) pm.expect(d[0]).to.have.property('avg_price'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products/1/price-history?days=30", "host": ["{{baseUrl}}"], "path": ["api", "products", "1", "price-history"], "query": [{ "key": "days", "value": "30" }] }
+          }
+        },
+        {
+          "name": "W6-T12 Price history product not found (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products/9999/price-history", "host": ["{{baseUrl}}"], "path": ["api", "products", "9999", "price-history"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Keyset Pagination",
+      "item": [
+        {
+          "name": "W6-T13 Products keyset page 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('mode=keyset', () => pm.expect(j.mode).to.eql('keyset'));",
+                  "pm.test('has nextCursor', () => pm.expect(j.pagination).to.have.property('nextCursor'));",
+                  "if (j.pagination.nextCursor) pm.environment.set('prodCursor', j.pagination.nextCursor);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products?cursor=0&limit=4", "host": ["{{baseUrl}}"], "path": ["api", "products"], "query": [{ "key": "cursor", "value": "0" }, { "key": "limit", "value": "4" }] }
+          }
+        },
+        {
+          "name": "W6-T14 Products keyset page 2 (cursor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ids greater than cursor', () => { const cur = Number(pm.environment.get('prodCursor')); j.data.forEach(p => pm.expect(p.id).to.be.above(cur)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products?cursor={{prodCursor}}&limit=4", "host": ["{{baseUrl}}"], "path": ["api", "products"], "query": [{ "key": "cursor", "value": "{{prodCursor}}" }, { "key": "limit", "value": "4" }] }
+          }
+        },
+        {
+          "name": "W6-T15 Products offset still works",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('mode=offset', () => pm.expect(pm.response.json().mode).to.eql('offset'));",
+                  "pm.test('has totalPages', () => pm.expect(pm.response.json().pagination).to.have.property('totalPages'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products?page=1&limit=4", "host": ["{{baseUrl}}"], "path": ["api", "products"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "4" }] }
+          }
+        },
+        {
+          "name": "W6-T16 Transactions keyset (buyer1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('mode=keyset', () => pm.expect(pm.response.json().mode).to.eql('keyset'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/transactions/me?cursor=0&limit=5&role=buyer", "host": ["{{baseUrl}}"], "path": ["api", "transactions", "me"], "query": [{ "key": "cursor", "value": "0" }, { "key": "limit", "value": "5" }, { "key": "role", "value": "buyer" }] }
+          }
+        }
+      ]
+    }
+  ]
+}
