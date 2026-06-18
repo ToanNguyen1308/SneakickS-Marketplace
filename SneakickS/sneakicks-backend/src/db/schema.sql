@@ -5,6 +5,7 @@
 -- =====================================================================
 
 -- Drop in reverse dependency order so this script can be re-run safely.
+DROP TABLE IF EXISTS notifications      CASCADE;
 DROP TABLE IF EXISTS order_status_logs CASCADE;
 DROP TABLE IF EXISTS follows           CASCADE;
 DROP TABLE IF EXISTS seller_ratings    CASCADE;
@@ -185,3 +186,18 @@ CREATE TABLE order_status_logs (
 );
 
 CREATE INDEX idx_status_logs_transaction ON order_status_logs(transaction_id);
+
+-- =====================================================================
+-- 11. notifications  (thong bao cho user - Week 7)
+-- =====================================================================
+CREATE TABLE notifications (
+    id          SERIAL       PRIMARY KEY,
+    user_id     INT          NOT NULL REFERENCES users(id)    ON DELETE CASCADE,
+    type        VARCHAR(40)  NOT NULL DEFAULT 'info',
+    product_id  INT          REFERENCES products(id) ON DELETE CASCADE,
+    message     TEXT         NOT NULL,
+    is_read     BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_notifications_user ON notifications(user_id, is_read, created_at DESC);

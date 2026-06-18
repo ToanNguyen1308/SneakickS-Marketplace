@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
+import Footer from "./components/Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Home from "./pages/Home.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
@@ -10,11 +11,12 @@ import MyAsks from "./pages/MyAsks.jsx";
 import MyOrders from "./pages/MyOrders.jsx";
 import Wishlist from "./pages/Wishlist.jsx";
 import AdminVerifications from "./pages/AdminVerifications.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 const App = () => (
-  <div className="min-h-screen bg-slate-50">
+  <div className="min-h-screen flex flex-col bg-slate-50">
     <Navbar />
-    <main className="max-w-6xl mx-auto px-4 py-6">
+    <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/products/:id" element={<ProductDetail />} />
@@ -60,9 +62,10 @@ const App = () => (
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </main>
+    <Footer />
   </div>
 );
 

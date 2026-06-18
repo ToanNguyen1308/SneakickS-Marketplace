@@ -24,7 +24,10 @@ const Login = () => {
 
   return (
     <div className="max-w-md mx-auto card mt-8">
-      <h1 className="text-xl font-bold text-slate-900 mb-4">Dang nhap</h1>
+      <h1 className="text-2xl font-extrabold text-ink mb-1">Sign in</h1>
+      <p className="text-sm text-slate-500 mb-4">
+        Welcome back to SneakickS.
+      </p>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className="label">Email</label>
@@ -48,13 +51,13 @@ const Login = () => {
         </div>
         {error && <div className="text-sm text-rose-600">{error}</div>}
         <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? "..." : "Login"}
+          {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
       <div className="text-sm text-slate-600 mt-3">
-        Chua co tai khoan?{" "}
-        <Link to="/register" className="text-brand-600 font-medium">
-          Dang ky
+        Don&apos;t have an account?{" "}
+        <Link to="/register" className="text-brand-700 font-semibold">
+          Sign up
         </Link>
       </div>
     </div>

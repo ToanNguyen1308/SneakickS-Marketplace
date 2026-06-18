@@ -2,7 +2,7 @@ import * as askModel from "../models/askModel.js";
 import * as productModel from "../models/productModel.js";
 import { matchNewAsk, sellNow } from "../services/matchingEngine.js";
 import { parsePagination, buildMeta } from "../utils/pagination.js";
-import { notifyProduct } from "../realtime/notify.js";
+import { notifyProduct, notifyFollowersOnNewAsk } from "../realtime/notify.js";
 
 const validatePlaceAskBody = (body) => {
   const { product_id, size, price } = body || {};
@@ -43,6 +43,16 @@ export const placeAsk = async (req, res) => {
 
   // Order book thay doi -> push real-time toi nguoi dang xem san pham.
   await notifyProduct(productId);
+
+  // Neu Ask con cho (chua khop) va la gia thap nhat -> bao cho followers.
+  if (!result.matched) {
+    await notifyFollowersOnNewAsk({
+      productId,
+      sellerId: req.user.id,
+      price: priceNumber,
+      size: String(size),
+    });
+  }
 
   return res.status(201).json({
     success: true,

@@ -3,13 +3,19 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
+import { ToastProvider } from "./contexts/ToastContext.jsx";
+import { NotificationProvider } from "./contexts/NotificationContext.jsx";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <ToastProvider>
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

@@ -8,10 +8,10 @@ const BidAskForm = ({ onSubmit, side, busy }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!size.trim()) return setError("Size khong duoc trong");
+    if (!size.trim()) return setError("Size is required");
     const priceNum = Number(price);
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
-      return setError("Price phai lon hon 0");
+      return setError("Price must be greater than 0");
     }
     try {
       await onSubmit({ size: size.trim(), price: priceNum });

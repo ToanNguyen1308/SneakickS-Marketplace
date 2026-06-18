@@ -32,6 +32,17 @@ export const remove = async (userId, productId) => {
   return rows[0] || null;
 };
 
+/**
+ * Lay danh sach user_id dang follow 1 san pham (dung de gui notification).
+ */
+export const listFollowersByProduct = async (productId) => {
+  const { rows } = await query(
+    `SELECT user_id FROM follows WHERE product_id = $1`,
+    [productId]
+  );
+  return rows.map((r) => r.user_id);
+};
+
 export const isFollowing = async (userId, productId) => {
   const { rows } = await query(
     `SELECT 1 FROM follows WHERE user_id = $1 AND product_id = $2`,

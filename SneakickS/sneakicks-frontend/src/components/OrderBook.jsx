@@ -36,7 +36,7 @@ const Side = ({ title, color, rows }) => (
 const OrderBook = ({ bids = [], asks = [] }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <Side title="Bids (Highest first)" color="text-rose-600" rows={bids} />
-    <Side title="Asks (Lowest first)" color="text-emerald-700" rows={asks} />
+    <Side title="Asks (Lowest first)" color="text-brand-700" rows={asks} />
   </div>
 );
 

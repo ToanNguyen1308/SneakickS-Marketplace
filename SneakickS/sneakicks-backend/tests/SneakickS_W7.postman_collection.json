@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "SneakickS W7 - Notifications",
+    "description": "Tuan 7: Notification real-time khi san pham dang follow co Ask moi (Lowest Ask). Chay Auth truoc, sau do theo thu tu.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:3000" }],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "W7-T01 Login buyer1 (follower)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('buyer1Token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"buyer1@sneakicks.com\",\n  \"password\": \"buyer123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "W7-T02 Login seller2 (places ask)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('seller2Token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"seller2@sneakicks.com\",\n  \"password\": \"seller123\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "W7-T03 buyer1 follows product 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('ok', () => pm.expect([200,201]).to.include(pm.response.code));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyer1Token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": 2\n}" },
+            "url": { "raw": "{{baseUrl}}/api/follows", "host": ["{{baseUrl}}"], "path": ["api", "follows"] }
+          }
+        },
+        {
+          "name": "W7-T04 unread count before",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('unreadBefore', pm.response.json().unread);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "unread-count"] }
+          }
+        },
+        {
+          "name": "W7-T05 seller2 places LOW ask on product 2 (trigger)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('201', () => pm.response.to.have.status(201));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{seller2Token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": 2,\n  \"size\": \"50\",\n  \"price\": 90\n}" },
+            "url": { "raw": "{{baseUrl}}/api/asks", "host": ["{{baseUrl}}"], "path": ["api", "asks"] }
+          }
+        },
+        {
+          "name": "W7-T06 buyer1 notifications list (has new_ask)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('unread increased', () => pm.expect(j.unread).to.be.above(Number(pm.environment.get('unreadBefore'))));",
+                  "pm.test('has a new_ask notification', () => pm.expect(j.data.some(n => n.type === 'new_ask')).to.be.true);",
+                  "if (j.data[0]) pm.environment.set('notifId', j.data[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications?limit=20", "host": ["{{baseUrl}}"], "path": ["api", "notifications"], "query": [{ "key": "limit", "value": "20" }] }
+          }
+        },
+        {
+          "name": "W7-T07 mark one as read",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications/{{notifId}}/read", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "{{notifId}}", "read"] }
+          }
+        },
+        {
+          "name": "W7-T08 mark all read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('success', () => pm.expect(pm.response.json().success).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "read-all"] }
+          }
+        },
+        {
+          "name": "W7-T09 unread is 0 after read-all",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('unread = 0', () => pm.expect(pm.response.json().unread).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{buyer1Token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["api", "notifications", "unread-count"] }
+          }
+        },
+        {
+          "name": "W7-T10 notifications no auth (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/notifications", "host": ["{{baseUrl}}"], "path": ["api", "notifications"] }
+          }
+        }
+      ]
+    }
+  ]
+}

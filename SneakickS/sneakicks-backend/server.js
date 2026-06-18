@@ -13,6 +13,7 @@ import verificationRoutes from "./src/routes/verificationRoutes.js";
 import ratingRoutes from "./src/routes/ratingRoutes.js";
 import followRoutes from "./src/routes/followRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
+import notificationRoutes from "./src/routes/notificationRoutes.js";
 import { initIO } from "./src/realtime/io.js";
 import {
   notFoundHandler,
@@ -30,7 +31,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     message: "SneakickS Backend is running",
-    version: "1.3.0 (Week 6 — Wishlist + Realtime + Charts + Keyset)",
+    version: "1.4.0 (Week 7 — Notifications + StockX UI)",
     endpoints: {
       products: [
         "GET    /api/products                          ?page=&limit=&brand=&category=&search=  (offset)",
@@ -80,8 +81,14 @@ app.get("/", (req, res) => {
         "GET    /api/follows/:productId/status                                 (auth required)",
         "GET    /api/users/me/follows                  ?page=&limit=           (auth required)",
       ],
+      notifications: [
+        "GET    /api/notifications                     ?page=&limit=           (auth required)",
+        "GET    /api/notifications/unread-count                                (auth required)",
+        "POST   /api/notifications/:id/read                                    (auth required)",
+        "POST   /api/notifications/read-all                                    (auth required)",
+      ],
       realtime: [
-        "WS     /socket.io                             emit join:product/leave:product -> nhan product:update",
+        "WS     /socket.io   join:product/leave:product -> product:update; auth(token) -> notification:new (room user:<id>)",
       ],
     },
   });
@@ -97,6 +104,7 @@ app.use("/api/admin/verifications", verificationRoutes);
 app.use("/api/sellers", ratingRoutes);
 app.use("/api/follows", followRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

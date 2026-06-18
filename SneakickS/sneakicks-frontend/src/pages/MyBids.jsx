@@ -2,14 +2,17 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import * as bidsApi from "../api/bids";
 import Pagination from "../components/Pagination.jsx";
+import { TableSkeleton, EmptyState } from "../components/States.jsx";
+import { useToast } from "../contexts/ToastContext.jsx";
 
 const STATUS_COLOR = {
-  active: "bg-emerald-100 text-emerald-700",
+  active: "bg-brand-100 text-brand-800",
   matched: "bg-indigo-100 text-indigo-700",
   cancelled: "bg-slate-200 text-slate-600",
 };
 
 const MyBids = () => {
+  const toast = useToast();
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
   const [page, setPage] = useState(1);
@@ -37,16 +40,17 @@ const MyBids = () => {
     if (!confirm(`Cancel bid #${id}?`)) return;
     try {
       await bidsApi.cancelBid(id);
+      toast.success(`Bid #${id} cancelled`);
       load();
     } catch (e) {
-      alert(e?.response?.data?.message || e.message);
+      toast.error(e?.response?.data?.message || e.message);
     }
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">My Bids</h1>
+        <h1 className="text-2xl font-extrabold text-ink">My Bids</h1>
         <select
           className="input max-w-[12rem]"
           value={status}
@@ -63,39 +67,35 @@ const MyBids = () => {
       </div>
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-100 text-slate-600">
-            <tr>
-              <th className="text-left px-3 py-2">#</th>
-              <th className="text-left px-3 py-2">Product</th>
-              <th className="text-left px-3 py-2">Size</th>
-              <th className="text-left px-3 py-2">Price</th>
-              <th className="text-left px-3 py-2">Status</th>
-              <th className="text-left px-3 py-2">Created</th>
-              <th className="text-right px-3 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        {loading ? (
+          <TableSkeleton rows={6} cols={6} />
+        ) : data.length === 0 ? (
+          <EmptyState
+            title="You have no bids yet"
+            hint="Place a bid from any product page."
+            icon="🏷️"
+          />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
               <tr>
-                <td colSpan={7} className="text-center py-6 text-slate-500">
-                  Loading...
-                </td>
+                <th className="text-left px-3 py-2">#</th>
+                <th className="text-left px-3 py-2">Product</th>
+                <th className="text-left px-3 py-2">Size</th>
+                <th className="text-left px-3 py-2">Price</th>
+                <th className="text-left px-3 py-2">Status</th>
+                <th className="text-left px-3 py-2">Created</th>
+                <th className="text-right px-3 py-2"></th>
               </tr>
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-6 text-slate-500">
-                  Khong co bid nao
-                </td>
-              </tr>
-            ) : (
-              data.map((b) => (
-                <tr key={b.id} className="border-t">
+            </thead>
+            <tbody>
+              {data.map((b) => (
+                <tr key={b.id} className="border-t border-slate-100">
                   <td className="px-3 py-2">{b.id}</td>
                   <td className="px-3 py-2">
                     <Link
                       to={`/products/${b.product_id}`}
-                      className="text-brand-700 hover:underline"
+                      className="text-brand-700 hover:underline font-medium"
                     >
                       {b.product_name || `#${b.product_id}`}
                     </Link>
@@ -122,10 +122,10 @@ const MyBids = () => {
                     )}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        )}
         <Pagination meta={meta} onChange={setPage} />
       </div>
     </div>

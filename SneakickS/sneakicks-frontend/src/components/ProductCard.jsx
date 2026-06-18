@@ -26,8 +26,8 @@ const ProductCard = ({ product, followed = false, onToggleFollow }) => {
         <button
           type="button"
           onClick={handleStar}
-          aria-label={followed ? "Bo theo doi" : "Theo doi"}
-          title={followed ? "Bo theo doi" : "Theo doi"}
+          aria-label={followed ? "Unfollow" : "Follow"}
+          title={followed ? "Unfollow" : "Follow"}
           className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg leading-none shadow transition-colors ${
             followed
               ? "bg-amber-400 text-white"

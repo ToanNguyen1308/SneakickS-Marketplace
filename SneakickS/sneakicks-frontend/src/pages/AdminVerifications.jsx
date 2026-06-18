@@ -3,6 +3,8 @@ import * as verApi from "../api/verifications";
 import * as txApi from "../api/transactions";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
 import Pagination from "../components/Pagination.jsx";
+import { TableSkeleton, EmptyState } from "../components/States.jsx";
+import { useToast } from "../contexts/ToastContext.jsx";
 
 const TABS = [
   { id: "pending", label: "Pending" },
@@ -11,6 +13,7 @@ const TABS = [
 ];
 
 const AdminVerifications = () => {
+  const toast = useToast();
   const [result, setResult] = useState("pending");
   const [data, setData] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -39,9 +42,10 @@ const AdminVerifications = () => {
     setBusy(true);
     try {
       await fn();
+      toast.success(`${label} done`);
       load();
     } catch (e) {
-      alert(`${label}: ${e?.response?.data?.message || e.message}`);
+      toast.error(`${label}: ${e?.response?.data?.message || e.message}`);
     } finally {
       setBusy(false);
     }
@@ -49,13 +53,11 @@ const AdminVerifications = () => {
 
   const start = (tid) =>
     handle(async () => {
-      // Truoc khi start, kiem tra transaction status; neu da o verifying thi bo qua.
       await verApi.startVerification(tid);
     }, "Start");
 
   const pass = (tid) =>
     handle(async () => {
-      // De don gian: neu transaction o shipped_to_verify, goi start truoc, roi pass.
       const tx = await txApi.getTransaction(tid);
       if (tx.data.data.status === "shipped_to_verify") {
         await verApi.startVerification(tid);
@@ -66,7 +68,7 @@ const AdminVerifications = () => {
   const submitFail = async () => {
     if (!failTarget) return;
     if (!failNotes.trim()) {
-      alert("Vui long nhap ly do");
+      toast.error("Please enter a reason");
       return;
     }
     setBusy(true);
@@ -76,11 +78,12 @@ const AdminVerifications = () => {
         await verApi.startVerification(failTarget);
       }
       await verApi.failVerification(failTarget, failNotes.trim());
+      toast.success(`Transaction #${failTarget} failed & cancelled`);
       setFailTarget(null);
       setFailNotes("");
       load();
     } catch (e) {
-      alert(e?.response?.data?.message || e.message);
+      toast.error(e?.response?.data?.message || e.message);
     } finally {
       setBusy(false);
     }
@@ -88,16 +91,14 @@ const AdminVerifications = () => {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-bold text-slate-900">Admin · Verifications</h1>
+      <h1 className="text-2xl font-extrabold text-ink">Admin &middot; Verifications</h1>
 
-      <div className="flex gap-1 bg-slate-200 rounded-md p-1 w-fit">
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`px-3 py-1 rounded text-sm ${
-              result === t.id
-                ? "bg-white shadow font-semibold"
-                : "text-slate-600"
+            className={`px-3 py-1.5 rounded-md text-sm transition ${
+              result === t.id ? "bg-white shadow font-semibold text-ink" : "text-slate-600"
             }`}
             onClick={() => {
               setResult(t.id);
@@ -110,44 +111,38 @@ const AdminVerifications = () => {
       </div>
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-100 text-slate-600">
-            <tr>
-              <th className="text-left px-3 py-2">Tx #</th>
-              <th className="text-left px-3 py-2">Product</th>
-              <th className="text-left px-3 py-2">Size</th>
-              <th className="text-left px-3 py-2">Price</th>
-              <th className="text-left px-3 py-2">Buyer</th>
-              <th className="text-left px-3 py-2">Seller</th>
-              <th className="text-left px-3 py-2">Order status</th>
-              <th className="text-right px-3 py-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        {loading ? (
+          <TableSkeleton rows={6} cols={7} />
+        ) : data.length === 0 ? (
+          <EmptyState
+            title="No transactions here"
+            hint="Items shipped to the verification center will appear in Pending."
+            icon="🔎"
+          />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
               <tr>
-                <td colSpan={8} className="text-center py-6 text-slate-500">
-                  Loading...
-                </td>
+                <th className="text-left px-3 py-2">Tx #</th>
+                <th className="text-left px-3 py-2">Product</th>
+                <th className="text-left px-3 py-2">Size</th>
+                <th className="text-left px-3 py-2">Price</th>
+                <th className="text-left px-3 py-2">Buyer</th>
+                <th className="text-left px-3 py-2">Seller</th>
+                <th className="text-left px-3 py-2">Order status</th>
+                <th className="text-right px-3 py-2">Action</th>
               </tr>
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="text-center py-6 text-slate-500">
-                  Khong co transaction phu hop
-                </td>
-              </tr>
-            ) : (
-              data.map((v) => (
-                <tr key={v.id} className="border-t">
+            </thead>
+            <tbody>
+              {data.map((v) => (
+                <tr key={v.id} className="border-t border-slate-100">
                   <td className="px-3 py-2">{v.transaction_id}</td>
                   <td className="px-3 py-2">
-                    <div>{v.product_name || `#${v.product_id}`}</div>
+                    <div className="font-medium">{v.product_name || `#${v.product_id}`}</div>
                     <div className="text-xs text-slate-500">{v.product_brand}</div>
                   </td>
                   <td className="px-3 py-2">{v.size}</td>
-                  <td className="px-3 py-2 font-medium">
-                    ${Number(v.price).toFixed(2)}
-                  </td>
+                  <td className="px-3 py-2 font-medium">${Number(v.price).toFixed(2)}</td>
                   <td className="px-3 py-2">{v.buyer_username}</td>
                   <td className="px-3 py-2">{v.seller_username}</td>
                   <td className="px-3 py-2">
@@ -185,26 +180,26 @@ const AdminVerifications = () => {
                     )}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        )}
         <Pagination meta={meta} onChange={setPage} />
       </div>
 
       {failTarget && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-2">Fail transaction #{failTarget}</h3>
             <p className="text-sm text-slate-600 mb-2">
-              Ly do (notes) la bat buoc — se duoc log vao order_status_logs.
+              A reason is required and will be logged to order_status_logs.
             </p>
             <textarea
               className="input"
               rows={3}
               value={failNotes}
               onChange={(e) => setFailNotes(e.target.value)}
-              placeholder="vd: San pham khong dung mau, co dau hieu sua chua..."
+              placeholder="e.g. Wrong colorway, signs of repair..."
             />
             <div className="flex gap-2 mt-4 justify-end">
               <button
@@ -215,7 +210,7 @@ const AdminVerifications = () => {
                   setFailNotes("");
                 }}
               >
-                Huy
+                Cancel
               </button>
               <button className="btn-danger" disabled={busy} onClick={submitFail}>
                 {busy ? "..." : "Confirm fail"}

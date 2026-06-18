@@ -16,7 +16,7 @@ const PriceChart = ({ data = [] }) => {
   if (!data || data.length === 0) {
     return (
       <div className="text-sm text-slate-400 py-10 text-center">
-        Chua co giao dich nao trong khoang thoi gian nay
+        No transactions in this period
       </div>
     );
   }
@@ -40,15 +40,15 @@ const PriceChart = ({ data = [] }) => {
         <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} width={48} />
         <Tooltip
           formatter={(value, name) => [`$${Number(value).toFixed(2)}`, name]}
-          labelFormatter={(label) => `Ngay ${label}`}
+          labelFormatter={(label) => `Day ${label}`}
         />
         <Line
           type="monotone"
           dataKey="avg"
-          stroke="#4f46e5"
+          stroke="#006340"
           strokeWidth={2}
           dot={{ r: 2 }}
-          name="Gia TB"
+          name="Avg price"
         />
       </LineChart>
     </ResponsiveContainer>
