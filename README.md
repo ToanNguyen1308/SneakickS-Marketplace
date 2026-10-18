@@ -1,6 +1,6 @@
 # SneakickS Marketplace
 
-Sàn giao dịch giày sneaker & collectibles theo mô hình **Bid/Ask** (tương tự StockX), xây dựng với **Node.js, Express và PostgreSQL**. Dự án thể hiện kỹ năng thiết kế marketplace, xử lý giao dịch đồng thời, matching engine và xây dựng REST API bảo mật.
+Sàn giao dịch giày sneaker & collectibles theo mô hình **Bid/Ask** (tương tự GOAT), xây dựng với **Node.js, Express và PostgreSQL**. Dự án thể hiện kỹ năng thiết kế marketplace, xử lý giao dịch đồng thời, matching engine và xây dựng REST API bảo mật.
 
 ---
 
