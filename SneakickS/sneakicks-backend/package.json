@@ -1,7 +1,7 @@
 {
   "name": "sneakicks-backend",
-  "version": "1.4.0",
-  "description": "Backend for SneakickS marketplace MVP (Week 7 — Notifications + per-user realtime + StockX UI)",
+  "version": "2.0.0",
+  "description": "Backend for SneakickS marketplace (GR2 — catalog attributes, behavior tracking, market by size)",
   "main": "server.js",
   "type": "module",
   "scripts": {

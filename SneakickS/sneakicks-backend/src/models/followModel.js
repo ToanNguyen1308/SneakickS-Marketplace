@@ -75,6 +75,8 @@ export const findByUserPaged = async (userId, { limit = 20, offset = 0 } = {}) =
         p.category_id,
         c.name         AS category,
         p.retail_price AS price,
+        p.colors,
+        p.silhouette,
         (
             SELECT MIN(price) FROM asks
             WHERE product_id = p.id AND status = 'active'

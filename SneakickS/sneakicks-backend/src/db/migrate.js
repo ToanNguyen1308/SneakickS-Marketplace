@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
 import pool, { closePool, query } from "../config/db.js";
+import { buildCatalog } from "./catalog.js";
 
 dotenv.config();
 
@@ -27,6 +28,8 @@ const SEED_BIDS = [
   // product_id, size, price, buyer_username
   [1, "42", 270.00, "buyer1"],
   [1, "42", 268.00, "buyer2"],
+  [1, "41", 255.00, "buyer3"],
+  [1, "44", 300.00, "buyer2"],
   [2, "43", 135.00, "buyer1"],
   [3, "42", 590.00, "buyer3"],
 ];
@@ -35,6 +38,10 @@ const SEED_ASKS = [
   // product_id, size, price, seller_username
   [1, "42", 280.00, "seller1"],
   [1, "43", 285.00, "seller1"],
+  [1, "40", 262.00, "seller2"],
+  [1, "41", 270.00, "seller2"],
+  [1, "44", 325.00, "seller1"],
+  [1, "45", 340.00, "seller2"],
   [2, "43", 140.00, "seller2"],
   [3, "42", 610.00, "seller2"],
 ];
@@ -107,6 +114,28 @@ const log = (msg) => console.log(`[migrate] ${msg}`);
 const runSqlFile = async (filePath) => {
   const sql = fs.readFileSync(filePath, "utf8");
   await query(sql);
+};
+
+const seedCatalog = async () => {
+  const catalog = buildCatalog();
+  log(`Seeding catalog (${catalog.length} products)...`);
+  const cols = [
+    "name", "brand", "description", "category_id", "release_date", "retail_price",
+    "sku", "silhouette", "colorway", "colors", "gender", "size_type", "tags",
+  ];
+  const BATCH = 100;
+  for (let i = 0; i < catalog.length; i += BATCH) {
+    const chunk = catalog.slice(i, i + BATCH);
+    const values = [];
+    const tuples = chunk.map((p, r) => {
+      cols.forEach((c) => values.push(p[c] ?? null));
+      return `(${cols.map((_, c) => `$${r * cols.length + c + 1}`).join(", ")})`;
+    });
+    await query(
+      `INSERT INTO products (${cols.join(", ")}) VALUES ${tuples.join(", ")}`,
+      values
+    );
+  }
 };
 
 const seedUsers = async () => {
@@ -238,7 +267,6 @@ const seedPriceHistory = async () => {
 const main = async () => {
   const args = process.argv.slice(2);
   const seedOnly = args.includes("--seed-only");
-  const reset = args.includes("--reset");
 
   try {
     if (!seedOnly) {
@@ -247,23 +275,14 @@ const main = async () => {
       log("Schema applied successfully.");
     }
 
-    if (reset || !seedOnly) {
-      log(`Running seed: ${SEED_FILE}`);
-      await runSqlFile(SEED_FILE);
-      await seedUsers();
-      await seedOrderBook();
-      await seedTransactions();
-      await seedPriceHistory();
-      log("Seed completed successfully.");
-    } else if (seedOnly) {
-      log(`Running seed only: ${SEED_FILE}`);
-      await runSqlFile(SEED_FILE);
-      await seedUsers();
-      await seedOrderBook();
-      await seedTransactions();
-      await seedPriceHistory();
-      log("Seed completed successfully.");
-    }
+    log(`Running seed: ${SEED_FILE}`);
+    await runSqlFile(SEED_FILE);
+    await seedCatalog();
+    await seedUsers();
+    await seedOrderBook();
+    await seedTransactions();
+    await seedPriceHistory();
+    log("Seed completed successfully.");
 
     log("All migrations done. Ready to run `npm run dev`.");
   } catch (err) {

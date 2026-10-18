@@ -41,7 +41,7 @@ export const matchNewBid = async ({ buyerId, productId, size, price }) =>
     );
     const newBid = bidInsert.rows[0];
 
-    // 2. Tim Lowest Ask phu hop, LOCK row.
+    // 2. Tim Lowest Ask phu hop cua NGUOI KHAC (chong self-trade), LOCK row.
     const askLookup = await client.query(
       `SELECT id, seller_id, product_id, size, price, status, created_at
        FROM asks
@@ -49,10 +49,11 @@ export const matchNewBid = async ({ buyerId, productId, size, price }) =>
          AND size       = $2
          AND status     = 'active'
          AND price     <= $3
+         AND seller_id <> $4
        ORDER BY price ASC, created_at ASC, id ASC
        LIMIT 1
        FOR UPDATE`,
-      [productId, size, price]
+      [productId, size, price, buyerId]
     );
 
     if (askLookup.rowCount === 0) {
@@ -130,10 +131,11 @@ export const matchNewAsk = async ({ sellerId, productId, size, price }) =>
          AND size       = $2
          AND status     = 'active'
          AND price     >= $3
+         AND buyer_id  <> $4
        ORDER BY price DESC, created_at ASC, id ASC
        LIMIT 1
        FOR UPDATE`,
-      [productId, size, price]
+      [productId, size, price, sellerId]
     );
 
     if (bidLookup.rowCount === 0) {
@@ -197,25 +199,20 @@ export const buyNow = async ({ buyerId, productId, size }) =>
       `SELECT id, seller_id, product_id, size, price, status, created_at
        FROM asks
        WHERE product_id = $1 AND size = $2 AND status = 'active'
+         AND seller_id <> $3
        ORDER BY price ASC, created_at ASC, id ASC
        LIMIT 1
        FOR UPDATE`,
-      [productId, size]
+      [productId, size, buyerId]
     );
 
     if (askLookup.rowCount === 0) {
-      const err = new Error("No active Ask available for this product/size");
+      const err = new Error("No active Ask from other sellers for this product/size");
       err.status = 404;
       throw err;
     }
 
     const ask = askLookup.rows[0];
-
-    if (ask.seller_id === buyerId) {
-      const err = new Error("You cannot Buy Now your own Ask");
-      err.status = 400;
-      throw err;
-    }
 
     await client.query(`UPDATE asks SET status = 'matched' WHERE id = $1`, [
       ask.id,
@@ -250,25 +247,20 @@ export const sellNow = async ({ sellerId, productId, size }) =>
       `SELECT id, buyer_id, product_id, size, price, status, created_at
        FROM bids
        WHERE product_id = $1 AND size = $2 AND status = 'active'
+         AND buyer_id <> $3
        ORDER BY price DESC, created_at ASC, id ASC
        LIMIT 1
        FOR UPDATE`,
-      [productId, size]
+      [productId, size, sellerId]
     );
 
     if (bidLookup.rowCount === 0) {
-      const err = new Error("No active Bid available for this product/size");
+      const err = new Error("No active Bid from other buyers for this product/size");
       err.status = 404;
       throw err;
     }
 
     const bid = bidLookup.rows[0];
-
-    if (bid.buyer_id === sellerId) {
-      const err = new Error("You cannot Sell Now to your own Bid");
-      err.status = 400;
-      throw err;
-    }
 
     await client.query(`UPDATE bids SET status = 'matched' WHERE id = $1`, [
       bid.id,

@@ -141,6 +141,9 @@ const MyOrders = () => {
         </button>
       );
     }
+    if (tx.status === "completed" && iAmBuyer && tx.rated) {
+      return <span className="text-xs text-slate-500">Rated ★</span>;
+    }
     if (tx.status === "completed" && iAmBuyer) {
       return (
         <button

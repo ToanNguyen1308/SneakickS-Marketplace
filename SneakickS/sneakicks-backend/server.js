@@ -14,6 +14,7 @@ import ratingRoutes from "./src/routes/ratingRoutes.js";
 import followRoutes from "./src/routes/followRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
+import eventRoutes from "./src/routes/eventRoutes.js";
 import { initIO } from "./src/realtime/io.js";
 import {
   notFoundHandler,
@@ -31,14 +32,20 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     message: "SneakickS Backend is running",
-    version: "1.4.0 (Week 7 — Notifications + StockX UI)",
+    version: "2.0.0 (GR2 lan 2 — catalog + event tracking + market by size)",
     endpoints: {
       products: [
-        "GET    /api/products                          ?page=&limit=&brand=&category=&search=  (offset)",
+        "GET    /api/products                          ?page=&limit=&brand=&category=&silhouette=&gender=&search=&sort=  (offset)",
         "GET    /api/products                          ?cursor=&limit=  (keyset pagination)",
+        "GET    /api/products/facets                   (brands + silhouettes for filters)",
         "GET    /api/products/:id",
         "GET    /api/products/:id/orderbook?size=42",
+        "GET    /api/products/:id/market               (lowest ask / highest bid / last sale per size)",
+        "GET    /api/products/:id/sales                ?limit=10",
         "GET    /api/products/:id/price-history        ?days=30",
+      ],
+      events: [
+        "POST   /api/events                            {session_id, events[]}  (guest or auth)",
       ],
       categories: [
         "GET    /api/categories",
@@ -105,6 +112,7 @@ app.use("/api/sellers", ratingRoutes);
 app.use("/api/follows", followRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/events", eventRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -68,6 +68,7 @@ const Wishlist = () => {
               product={p}
               followed
               onToggleFollow={() => busyId !== p.id && unfollow(p)}
+              source="wishlist"
             />
           ))}
         </div>

@@ -1,26 +1,27 @@
 import { Link } from "react-router-dom";
-
-const PLACEHOLDER = "https://placehold.co/400x300?text=Sneakicks";
-
-const formatMoney = (value) =>
-  value === null || value === undefined ? "—" : `$${Number(value).toFixed(2)}`;
+import ProductImage from "./ProductImage.jsx";
+import { formatMoney, premiumPct } from "../lib/format";
 
 /**
  * ProductCard
- *  - Week 6: nhan them `followed` + `onToggleFollow` (tuy chon) de hien nut sao Wishlist.
- *    Nut sao goi preventDefault/stopPropagation de khong dieu huong khi bam.
+ *  - Week 6: `followed` + `onToggleFollow` (tuy chon) hien nut sao Wishlist.
+ *  - GR2: anh SVG theo phoi mau, Lowest Ask + premium so voi retail, so giao dich 30 ngay;
+ *    `source` cho biet nguoi dung den san pham tu dau (browse / search / wishlist...).
  */
-const ProductCard = ({ product, followed = false, onToggleFollow }) => {
+const ProductCard = ({ product, followed = false, onToggleFollow, source }) => {
   const handleStar = (e) => {
     e.preventDefault();
     e.stopPropagation();
     onToggleFollow?.(product, !followed);
   };
 
+  const premium = premiumPct(product.lowestAsk, product.price);
+
   return (
     <Link
       to={`/products/${product.id}`}
-      className="card relative hover:shadow-md transition-shadow"
+      state={source ? { source } : undefined}
+      className="group card relative p-3 hover:shadow-md hover:border-slate-300 transition"
     >
       {onToggleFollow && (
         <button
@@ -37,35 +38,40 @@ const ProductCard = ({ product, followed = false, onToggleFollow }) => {
           {followed ? "★" : "☆"}
         </button>
       )}
-      <div className="aspect-[4/3] w-full overflow-hidden rounded bg-slate-100 mb-3">
-        <img
-          src={product.image || PLACEHOLDER}
-          alt={product.name}
-          className="h-full w-full object-cover"
-          onError={(e) => {
-            e.currentTarget.src = PLACEHOLDER;
-          }}
-        />
+      <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-slate-50 mb-3">
+        <div className="w-full h-full transition-transform duration-300 group-hover:scale-105">
+          <ProductImage product={product} />
+        </div>
       </div>
-      <div className="text-xs uppercase text-brand-600 font-semibold">
+      <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
         {product.brand}
       </div>
-      <div className="font-medium text-slate-900 line-clamp-2 mb-2">
+      <div className="font-medium text-ink leading-snug line-clamp-2 min-h-[2.5rem]">
         {product.name}
       </div>
-      <div className="grid grid-cols-2 gap-2 text-xs text-slate-700">
+      <div className="mt-2 flex items-end justify-between gap-2">
         <div>
-          <div className="text-slate-400">Lowest Ask</div>
-          <div className="font-semibold text-emerald-700">
-            {formatMoney(product.lowestAsk)}
+          <div className="text-[11px] text-slate-400">Lowest Ask</div>
+          <div className="font-bold text-ink text-lg leading-tight">
+            {formatMoney(product.lowestAsk, 0)}
           </div>
         </div>
-        <div>
-          <div className="text-slate-400">Highest Bid</div>
-          <div className="font-semibold text-rose-600">
-            {formatMoney(product.highestBid)}
-          </div>
-        </div>
+        {premium !== null && (
+          <span
+            className={`badge ${premium >= 0 ? "bg-brand-50 text-brand-700" : "bg-rose-50 text-rose-600"}`}
+            title="Premium vs retail"
+          >
+            {premium >= 0 ? "+" : ""}
+            {premium}%
+          </span>
+        )}
+      </div>
+      <div className="text-[11px] text-slate-400 mt-1">
+        {product.sales30d
+          ? `${product.sales30d} sold (30d)`
+          : product.highestBid
+            ? `Bid ${formatMoney(product.highestBid, 0)}`
+            : `Retail ${formatMoney(product.price, 0)}`}
       </div>
     </Link>
   );

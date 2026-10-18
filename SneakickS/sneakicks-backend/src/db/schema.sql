@@ -1,10 +1,13 @@
 -- =====================================================================
--- SneakickS Marketplace — Database Schema (Week 4)
+-- SneakickS Marketplace — Database Schema
 -- Dialect: PostgreSQL >= 13
--- Source of truth: ERD Tuan 2 (10 bang)
+-- GR1: 11 bang (ERD Tuan 2 + notifications)
+-- GR2 (lan 2): + thuoc tinh san pham cho Content-based
+--              + bang user_events (ghi nhan hanh vi cho he goi y)
 -- =====================================================================
 
 -- Drop in reverse dependency order so this script can be re-run safely.
+DROP TABLE IF EXISTS user_events        CASCADE;
 DROP TABLE IF EXISTS notifications      CASCADE;
 DROP TABLE IF EXISTS order_status_logs CASCADE;
 DROP TABLE IF EXISTS follows           CASCADE;
@@ -56,11 +59,21 @@ CREATE TABLE products (
     category_id   INT           NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
     release_date  DATE,
     retail_price  DECIMAL(10,2) CHECK (retail_price IS NULL OR retail_price > 0),
+    sku           VARCHAR(40)   UNIQUE,
+    silhouette    VARCHAR(100),
+    colorway      VARCHAR(100),
+    colors        VARCHAR(100),
+    gender        VARCHAR(10)   NOT NULL DEFAULT 'unisex'
+                  CHECK (gender IN ('men', 'women', 'unisex', 'kids')),
+    size_type     VARCHAR(10)   NOT NULL DEFAULT 'shoe'
+                  CHECK (size_type IN ('shoe', 'apparel', 'os')),
+    tags          TEXT,
     created_at    TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_products_brand     ON products(brand);
-CREATE INDEX idx_products_category  ON products(category_id);
+CREATE INDEX idx_products_brand      ON products(brand);
+CREATE INDEX idx_products_category   ON products(category_id);
+CREATE INDEX idx_products_silhouette ON products(silhouette);
 
 -- =====================================================================
 -- 4. asks  (lenh ban)
@@ -132,6 +145,7 @@ CREATE TABLE transactions (
 CREATE INDEX idx_transactions_buyer  ON transactions(buyer_id);
 CREATE INDEX idx_transactions_seller ON transactions(seller_id);
 CREATE INDEX idx_transactions_status ON transactions(status);
+CREATE INDEX idx_transactions_product_time ON transactions(product_id, created_at DESC);
 
 -- =====================================================================
 -- 7. verifications  (xac thuc san pham bang Trung tam Xac thuc)
@@ -201,3 +215,28 @@ CREATE TABLE notifications (
 );
 
 CREATE INDEX idx_notifications_user ON notifications(user_id, is_read, created_at DESC);
+
+-- =====================================================================
+-- 12. user_events  (GR2 — implicit feedback cho he goi y)
+--   user_id NULL = khach chua dang nhap, dinh danh bang session_id.
+--   Bid/Ask/Follow/Transaction da co bang rieng; bang nay ghi cac hanh vi
+--   khong de lai dau vet o noi khac: xem trang (kem thoi gian xem), tim kiem,
+--   click vao goi y.
+-- =====================================================================
+CREATE TABLE user_events (
+    id             BIGSERIAL    PRIMARY KEY,
+    user_id        INT          REFERENCES users(id)    ON DELETE CASCADE,
+    session_id     VARCHAR(64),
+    product_id     INT          REFERENCES products(id) ON DELETE CASCADE,
+    event_type     VARCHAR(20)  NOT NULL
+                   CHECK (event_type IN ('view', 'search', 'rec_click')),
+    query          VARCHAR(200),
+    dwell_ms       INT          CHECK (dwell_ms IS NULL OR dwell_ms >= 0),
+    source         VARCHAR(40),
+    rec_request_id VARCHAR(64),
+    created_at     TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_events_user    ON user_events(user_id, created_at DESC);
+CREATE INDEX idx_user_events_session ON user_events(session_id, created_at DESC);
+CREATE INDEX idx_user_events_product ON user_events(product_id, event_type, created_at DESC);

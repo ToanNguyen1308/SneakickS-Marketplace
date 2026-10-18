@@ -1,72 +1,116 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import * as productsApi from "../api/products";
 import * as bidsApi from "../api/bids";
 import * as asksApi from "../api/asks";
 import * as followsApi from "../api/follows";
 import OrderBook from "../components/OrderBook.jsx";
-import BidAskForm from "../components/BidAskForm.jsx";
+import TradePanel from "../components/TradePanel.jsx";
+import RecentSales from "../components/RecentSales.jsx";
+import ProductImage from "../components/ProductImage.jsx";
 import socket from "../realtime/socket";
+import useProductViewTracking from "../hooks/useProductViewTracking";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useToast } from "../contexts/ToastContext.jsx";
+import { formatDate, formatMoney, premiumPct } from "../lib/format";
 
 // Tach recharts ra khoi bundle ban dau (chi tai khi xem trang chi tiet).
 const PriceChart = lazy(() => import("../components/PriceChart.jsx"));
 
-const PLACEHOLDER = "https://placehold.co/800x600?text=Sneakicks";
-
-const formatMoney = (v) =>
-  v === null || v === undefined ? "—" : `$${Number(v).toFixed(2)}`;
+/** Size mac dinh: size co Lowest Ask re nhat; neu chua co Ask thi lay size giua. */
+const pickDefaultSize = (market) => {
+  if (!market.length) return null;
+  const withAsk = market.filter((m) => m.lowestAsk !== null);
+  if (withAsk.length) {
+    return withAsk.reduce((a, b) => (Number(b.lowestAsk) < Number(a.lowestAsk) ? b : a)).size;
+  }
+  return market[Math.floor(market.length / 2)].size;
+};
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin } = useAuth();
   const toast = useToast();
   const canFollow = isAuthenticated && !isAdmin;
 
   const [product, setProduct] = useState(null);
-  const [size, setSize] = useState("42");
+  const [notFound, setNotFound] = useState(false);
+  const [market, setMarket] = useState([]);
+  const [size, setSize] = useState(null);
   const [book, setBook] = useState({ bids: [], asks: [] });
+  const [sales, setSales] = useState([]);
   const [busy, setBusy] = useState(false);
   const [following, setFollowing] = useState(false);
   const [priceHistory, setPriceHistory] = useState([]);
   const [live, setLive] = useState(false);
 
+  useProductViewTracking(product?.id, location.state?.source || "direct");
+
+  const reload = useCallback(async () => {
+    try {
+      const { data } = await productsApi.getProduct(id);
+      setProduct(data.data);
+    } catch (e) {
+      if (e?.response?.status === 404) setNotFound(true);
+    }
+  }, [id]);
+
+  const loadMarket = useCallback(async () => {
+    try {
+      const { data } = await productsApi.getMarket(id);
+      const rows = data.data || [];
+      setMarket(rows);
+      setSize((s) => (s && rows.some((m) => m.size === s) ? s : pickDefaultSize(rows)));
+    } catch {
+      setMarket([]);
+    }
+  }, [id]);
+
   const loadOrderBook = useCallback(async () => {
+    if (!size) return;
     try {
       const { data } = await productsApi.getOrderBook(id, size);
       setBook({ bids: data.bids?.data || [], asks: data.asks?.data || [] });
-    } catch (e) {
+    } catch {
       setBook({ bids: [], asks: [] });
     }
   }, [id, size]);
 
-  const reload = useCallback(async () => {
-    const { data } = await productsApi.getProduct(id);
-    setProduct(data.data);
+  const loadSales = useCallback(async () => {
+    try {
+      const { data } = await productsApi.getRecentSales(id, 10);
+      setSales(data.data || []);
+    } catch {
+      setSales([]);
+    }
   }, [id]);
 
   const loadPriceHistory = useCallback(async () => {
     try {
       const { data } = await productsApi.getPriceHistory(id, 30);
       setPriceHistory(data.data || []);
-    } catch (e) {
+    } catch {
       setPriceHistory([]);
     }
   }, [id]);
 
   useEffect(() => {
+    setProduct(null);
+    setNotFound(false);
+    setSize(null);
+    setLive(false);
     reload();
-  }, [reload]);
+    loadMarket();
+    loadSales();
+    loadPriceHistory();
+    window.scrollTo({ top: 0 });
+  }, [reload, loadMarket, loadSales, loadPriceHistory]);
 
   useEffect(() => {
     loadOrderBook();
   }, [loadOrderBook]);
-
-  useEffect(() => {
-    loadPriceHistory();
-  }, [loadPriceHistory]);
 
   useEffect(() => {
     if (!canFollow) {
@@ -79,6 +123,11 @@ const ProductDetail = () => {
       .catch(() => setFollowing(false));
   }, [id, canFollow]);
 
+  const refreshAll = useCallback(
+    () => Promise.all([reload(), loadMarket(), loadOrderBook(), loadSales()]),
+    [reload, loadMarket, loadOrderBook, loadSales]
+  );
+
   // Real-time: join room product:<id>, refetch khi co thay doi order book.
   useEffect(() => {
     const productId = Number(id);
@@ -86,26 +135,25 @@ const ProductDetail = () => {
     const onUpdate = (payload) => {
       if (Number(payload?.productId) !== productId) return;
       setLive(true);
-      reload();
-      loadOrderBook();
+      refreshAll();
     };
     socket.on("product:update", onUpdate);
     return () => {
       socket.emit("leave:product", productId);
       socket.off("product:update", onUpdate);
     };
-  }, [id, reload, loadOrderBook]);
+  }, [id, refreshAll]);
 
   const requireLogin = () => {
     if (!isAuthenticated) {
-      navigate("/login");
+      navigate("/login", { state: { from: location } });
       return false;
     }
     return true;
   };
 
   const toggleFollow = async () => {
-    if (!isAuthenticated) return navigate("/login");
+    if (!requireLogin()) return;
     const next = !following;
     setFollowing(next);
     try {
@@ -116,183 +164,178 @@ const ProductDetail = () => {
     }
   };
 
-  const handlePlaceBid = async ({ size: s, price }) => {
-    if (!requireLogin()) return;
+  const run = async (fn, successMsg) => {
+    if (!requireLogin()) return false;
     setBusy(true);
     try {
-      const { data } = await bidsApi.placeBid({ product_id: Number(id), size: s, price });
-      toast.success(data.message || "Bid placed");
-      setSize(s);
-      await Promise.all([reload(), loadOrderBook()]);
+      const { data } = await fn();
+      toast.success(successMsg(data));
+      await refreshAll();
+      return true;
     } catch (e) {
       toast.error(e?.response?.data?.message || e.message);
+      return false;
     } finally {
       setBusy(false);
     }
   };
 
-  const handlePlaceAsk = async ({ size: s, price }) => {
-    if (!requireLogin()) return;
-    setBusy(true);
-    try {
-      const { data } = await asksApi.placeAsk({ product_id: Number(id), size: s, price });
-      toast.success(data.message || "Ask placed");
-      setSize(s);
-      await Promise.all([reload(), loadOrderBook()]);
-    } catch (e) {
-      toast.error(e?.response?.data?.message || e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const payload = (extra = {}) => ({ product_id: Number(id), size, ...extra });
 
-  const handleBuyNow = async () => {
-    if (!requireLogin()) return;
-    setBusy(true);
-    try {
-      const { data } = await bidsApi.buyNow({ product_id: Number(id), size });
-      toast.success(`Buy Now success — transaction #${data.data?.transaction?.id}`);
-      await Promise.all([reload(), loadOrderBook()]);
-    } catch (e) {
-      toast.error(e?.response?.data?.message || e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const handlePlaceBid = (price) =>
+    run(() => bidsApi.placeBid(payload({ price })), (d) => d.message || "Bid placed");
+  const handlePlaceAsk = (price) =>
+    run(() => asksApi.placeAsk(payload({ price })), (d) => d.message || "Ask placed");
+  const handleBuyNow = () =>
+    run(() => bidsApi.buyNow(payload()), (d) => `Purchased! Order #${d.data?.transaction?.id}`);
+  const handleSellNow = () =>
+    run(() => asksApi.sellNow(payload()), (d) => `Sold! Order #${d.data?.transaction?.id}`);
 
-  const handleSellNow = async () => {
-    if (!requireLogin()) return;
-    setBusy(true);
-    try {
-      const { data } = await asksApi.sellNow({ product_id: Number(id), size });
-      toast.success(`Sell Now success — transaction #${data.data?.transaction?.id}`);
-      await Promise.all([reload(), loadOrderBook()]);
-    } catch (e) {
-      toast.error(e?.response?.data?.message || e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!product) {
+  if (notFound) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="skeleton h-80 rounded-xl" />
-        <div className="md:col-span-2 skeleton h-80 rounded-xl" />
+      <div className="card text-center py-16">
+        <div className="text-lg font-semibold">Product not found</div>
+        <Link to="/" className="btn-primary mt-4 inline-flex">Back to marketplace</Link>
       </div>
     );
   }
 
+  if (!product) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="skeleton h-96 rounded-xl" />
+        <div className="skeleton h-96 rounded-xl" />
+      </div>
+    );
+  }
+
+  const premium = premiumPct(product.lastSale, product.price);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-1 card">
-        <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-slate-100">
-          <img
-            src={product.image || PLACEHOLDER}
-            alt={product.name}
-            className="w-full h-full object-cover"
-            onError={(e) => (e.currentTarget.src = PLACEHOLDER)}
-          />
-        </div>
-        <div className="text-xs uppercase tracking-wide text-brand-700 font-semibold mt-3">
+    <div className="space-y-6">
+      <nav className="text-xs text-slate-500 flex gap-1 flex-wrap">
+        <Link to="/" className="hover:underline">Home</Link>
+        <span>/</span>
+        <Link to={`/?category=${encodeURIComponent(product.category || "")}`} className="hover:underline">
+          {product.category}
+        </Link>
+        <span>/</span>
+        <Link to={`/?brand=${encodeURIComponent(product.brand)}`} className="hover:underline">
           {product.brand}
+        </Link>
+      </nav>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="card p-0 overflow-hidden">
+            <div className="aspect-[4/3] w-full">
+              <ProductImage product={product} />
+            </div>
+          </div>
+          <dl className="card grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <dt className="label">Retail</dt>
+              <dd className="font-medium">{formatMoney(product.price)}</dd>
+            </div>
+            <div>
+              <dt className="label">Release</dt>
+              <dd className="font-medium">{formatDate(product.release_date)}</dd>
+            </div>
+            <div>
+              <dt className="label">Colorway</dt>
+              <dd className="font-medium">{product.colorway || "—"}</dd>
+            </div>
+            <div>
+              <dt className="label">Style</dt>
+              <dd className="font-medium">{product.sku || "—"}</dd>
+            </div>
+            <div>
+              <dt className="label">Silhouette</dt>
+              <dd className="font-medium">{product.silhouette || "—"}</dd>
+            </div>
+            <div>
+              <dt className="label">Last sale</dt>
+              <dd className="font-medium">
+                {formatMoney(product.lastSale)}
+                {premium !== null && (
+                  <span className={`ml-1 text-xs ${premium >= 0 ? "text-brand-700" : "text-rose-600"}`}>
+                    ({premium >= 0 ? "+" : ""}{premium}%)
+                  </span>
+                )}
+              </dd>
+            </div>
+          </dl>
         </div>
-        <h1 className="text-xl font-bold text-ink mt-1">{product.name}</h1>
-        <p className="text-sm text-slate-600 mt-2">{product.description}</p>
 
-        <dl className="grid grid-cols-2 gap-3 mt-4 text-sm">
+        <div className="space-y-4">
           <div>
-            <dt className="label">Category</dt>
-            <dd>{product.category || "—"}</dd>
+            <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+              {product.brand} · {product.category}
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-ink mt-1 leading-tight">
+              {product.name}
+            </h1>
+            <div className="flex items-center gap-2 mt-3">
+              {!isAdmin && (
+                <button
+                  type="button"
+                  onClick={toggleFollow}
+                  className={following ? "btn-secondary" : "btn-primary"}
+                >
+                  {following ? "★ Following" : "☆ Follow"}
+                </button>
+              )}
+              {live && (
+                <span className="badge bg-brand-100 text-brand-800 inline-flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-brand-600 mr-1 animate-pulse" />
+                  Live
+                </span>
+              )}
+              {product.sales30d > 0 && (
+                <span className="badge bg-slate-100 text-slate-600">
+                  {product.sales30d} sold in 30 days
+                </span>
+              )}
+            </div>
           </div>
-          <div>
-            <dt className="label">Retail</dt>
-            <dd>{formatMoney(product.price)}</dd>
-          </div>
-          <div>
-            <dt className="label">Lowest Ask</dt>
-            <dd className="font-bold text-brand-700 text-lg">
-              {formatMoney(product.lowestAsk)}
-            </dd>
-          </div>
-          <div>
-            <dt className="label">Highest Bid</dt>
-            <dd className="font-bold text-rose-600 text-lg">
-              {formatMoney(product.highestBid)}
-            </dd>
-          </div>
-        </dl>
 
-        {!isAdmin && (
-          <button
-            type="button"
-            onClick={toggleFollow}
-            className={`w-full mt-4 ${following ? "btn-secondary" : "btn-primary"}`}
-          >
-            {following ? "★ Following" : "☆ Follow"}
-          </button>
-        )}
+          {isAdmin ? (
+            <div className="card text-sm text-slate-600">
+              Admin accounts operate the verification center and cannot trade.
+            </div>
+          ) : (
+            <TradePanel
+              market={market}
+              size={size}
+              onSizeChange={setSize}
+              busy={busy}
+              onBuyNow={handleBuyNow}
+              onSellNow={handleSellNow}
+              onPlaceBid={handlePlaceBid}
+              onPlaceAsk={handlePlaceAsk}
+            />
+          )}
 
-        <div className="mt-5">
-          <div className="label">Price history (30 days)</div>
+          <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card">
+          <h3 className="font-semibold text-ink mb-3">Price history (30 days)</h3>
           <Suspense fallback={<div className="skeleton h-[240px] w-full rounded" />}>
             <PriceChart data={priceHistory} />
           </Suspense>
         </div>
+        <div className="card">
+          <h3 className="font-semibold text-ink mb-3">Last sales</h3>
+          <RecentSales sales={sales} />
+        </div>
       </div>
 
-      <div className="md:col-span-2 space-y-4">
-        <div className="card space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-ink">Order Book</h3>
-            {live && (
-              <span className="badge bg-brand-100 text-brand-800 inline-flex items-center">
-                <span className="w-2 h-2 rounded-full bg-brand-600 mr-1 animate-pulse" />
-                Live
-              </span>
-            )}
-          </div>
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <label className="label">Size</label>
-              <input
-                className="input"
-                value={size}
-                onChange={(e) => setSize(e.target.value)}
-                placeholder="42"
-              />
-            </div>
-            <button className="btn-secondary" onClick={loadOrderBook} disabled={busy}>
-              Refresh
-            </button>
-          </div>
-          <OrderBook bids={book.bids} asks={book.asks} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="card">
-            <h3 className="font-semibold text-rose-600 mb-2">Bid (Buy)</h3>
-            <BidAskForm side="bid" onSubmit={handlePlaceBid} busy={busy} />
-            <button
-              className="btn-danger w-full mt-3"
-              onClick={handleBuyNow}
-              disabled={busy || !product.lowestAsk}
-            >
-              Buy Now - {formatMoney(product.lowestAsk)}
-            </button>
-          </div>
-          <div className="card">
-            <h3 className="font-semibold text-brand-700 mb-2">Ask (Sell)</h3>
-            <BidAskForm side="ask" onSubmit={handlePlaceAsk} busy={busy} />
-            <button
-              className="btn-success w-full mt-3"
-              onClick={handleSellNow}
-              disabled={busy || !product.highestBid}
-            >
-              Sell Now - {formatMoney(product.highestBid)}
-            </button>
-          </div>
-        </div>
+      <div className="card">
+        <h3 className="font-semibold text-ink mb-3">Order book · size {size || "—"}</h3>
+        <OrderBook bids={book.bids} asks={book.asks} />
       </div>
     </div>
   );

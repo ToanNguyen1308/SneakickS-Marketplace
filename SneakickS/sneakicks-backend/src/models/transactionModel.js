@@ -70,7 +70,8 @@ export const findByUserPaged = async (
              p.brand     AS product_brand,
              p.image_url AS product_image,
              ub.username AS buyer_username,
-             us.username AS seller_username
+             us.username AS seller_username,
+             EXISTS (SELECT 1 FROM seller_ratings sr WHERE sr.transaction_id = t.id) AS rated
       FROM transactions t
       LEFT JOIN products p ON p.id = t.product_id
       LEFT JOIN users ub   ON ub.id = t.buyer_id
@@ -112,7 +113,8 @@ export const findByUserKeyset = async (
              p.brand     AS product_brand,
              p.image_url AS product_image,
              ub.username AS buyer_username,
-             us.username AS seller_username
+             us.username AS seller_username,
+             EXISTS (SELECT 1 FROM seller_ratings sr WHERE sr.transaction_id = t.id) AS rated
       FROM transactions t
       LEFT JOIN products p ON p.id = t.product_id
       LEFT JOIN users ub   ON ub.id = t.buyer_id

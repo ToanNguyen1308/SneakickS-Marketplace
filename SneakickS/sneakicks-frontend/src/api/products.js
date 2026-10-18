@@ -10,3 +10,10 @@ export const getOrderBook = (id, size) =>
 
 export const getPriceHistory = (id, days = 30) =>
   api.get(`/api/products/${id}/price-history`, { params: { days } });
+
+export const getMarket = (id) => api.get(`/api/products/${id}/market`);
+
+export const getRecentSales = (id, limit = 10) =>
+  api.get(`/api/products/${id}/sales`, { params: { limit } });
+
+export const getFacets = () => api.get("/api/products/facets");
