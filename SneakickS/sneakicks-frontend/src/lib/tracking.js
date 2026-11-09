@@ -54,9 +54,11 @@ const send = (events, keepalive) => {
 export const flush = (keepalive = false) => {
   clearTimeout(timer);
   timer = null;
+  const pending = [];
   while (queue.length) {
-    send(queue.splice(0, MAX_BATCH), keepalive);
+    pending.push(send(queue.splice(0, MAX_BATCH), keepalive));
   }
+  return Promise.all(pending);
 };
 
 const schedule = () => {
@@ -71,6 +73,10 @@ export const track = (type, payload = {}) => {
 
 export const trackView = (productId, dwellMs, source) =>
   track("view", { product_id: Number(productId), dwell_ms: dwellMs, source });
+
+/** Click vao 1 san pham trong khoi goi y — gan voi lan goi y qua rec_request_id. */
+export const trackRecClick = (productId, source, recRequestId) =>
+  track("rec_click", { product_id: Number(productId), source, rec_request_id: recRequestId });
 
 const SEARCH_DEDUP_MS = 30 * 1000;
 let lastSearch = { q: null, at: 0 };

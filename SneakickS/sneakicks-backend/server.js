@@ -15,6 +15,7 @@ import followRoutes from "./src/routes/followRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import eventRoutes from "./src/routes/eventRoutes.js";
+import recommendationRoutes from "./src/routes/recommendationRoutes.js";
 import { initIO } from "./src/realtime/io.js";
 import {
   notFoundHandler,
@@ -32,7 +33,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     message: "SneakickS Backend is running",
-    version: "2.0.0 (GR2 lan 2 — catalog + event tracking + market by size)",
+    version: "2.1.0 (GR2 lan 3 — recommender baselines: trending / similar / recently viewed)",
     endpoints: {
       products: [
         "GET    /api/products                          ?page=&limit=&brand=&category=&silhouette=&gender=&search=&sort=  (offset)",
@@ -46,6 +47,11 @@ app.get("/", (req, res) => {
       ],
       events: [
         "POST   /api/events                            {session_id, events[]}  (guest or auth)",
+      ],
+      recommendations: [
+        "GET    /api/recommendations/trending          ?limit=&exclude=  (recommender, SQL fallback)",
+        "GET    /api/recommendations/similar/:id       ?limit=           (content-based, SQL fallback)",
+        "GET    /api/recommendations/recently-viewed   ?session_id=&limit=&exclude=  (guest or auth)",
       ],
       categories: [
         "GET    /api/categories",
@@ -113,6 +119,7 @@ app.use("/api/follows", followRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

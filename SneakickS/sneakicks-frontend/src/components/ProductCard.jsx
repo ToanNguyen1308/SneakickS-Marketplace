@@ -1,14 +1,16 @@
 import { Link } from "react-router-dom";
 import ProductImage from "./ProductImage.jsx";
 import { formatMoney, premiumPct } from "../lib/format";
+import { trackRecClick } from "../lib/tracking";
 
 /**
  * ProductCard
  *  - Week 6: `followed` + `onToggleFollow` (tuy chon) hien nut sao Wishlist.
  *  - GR2: anh SVG theo phoi mau, Lowest Ask + premium so voi retail, so giao dich 30 ngay;
  *    `source` cho biet nguoi dung den san pham tu dau (browse / search / wishlist...).
+ *  - GR2 lan 3: trong khoi goi y, `recRequestId` de ghi su kien rec_click; `reason` la loi giai thich.
  */
-const ProductCard = ({ product, followed = false, onToggleFollow, source }) => {
+const ProductCard = ({ product, followed = false, onToggleFollow, source, recRequestId, reason }) => {
   const handleStar = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -21,7 +23,8 @@ const ProductCard = ({ product, followed = false, onToggleFollow, source }) => {
     <Link
       to={`/products/${product.id}`}
       state={source ? { source } : undefined}
-      className="group card relative p-3 hover:shadow-md hover:border-slate-300 transition"
+      onClick={recRequestId ? () => trackRecClick(product.id, source, recRequestId) : undefined}
+      className="group card relative block p-3 hover:shadow-md hover:border-slate-300 transition"
     >
       {onToggleFollow && (
         <button
@@ -73,6 +76,11 @@ const ProductCard = ({ product, followed = false, onToggleFollow, source }) => {
             ? `Bid ${formatMoney(product.highestBid, 0)}`
             : `Retail ${formatMoney(product.price, 0)}`}
       </div>
+      {reason && (
+        <div className="text-[11px] text-brand-700 mt-1 truncate" title={reason}>
+          {reason}
+        </div>
+      )}
     </Link>
   );
 };

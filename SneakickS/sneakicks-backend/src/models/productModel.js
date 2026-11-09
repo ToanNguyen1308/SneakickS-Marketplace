@@ -152,6 +152,14 @@ export const findById = async (id) => {
   return rows[0] || null;
 };
 
+/** Lay nhieu san pham theo danh sach id, giu nguyen thu tu (thu tu xep hang cua goi y). */
+export const findByIds = async (ids) => {
+  if (!ids.length) return [];
+  const { rows } = await query(SELECT_PRODUCT_BASE + ` WHERE p.id = ANY($1::int[])`, [ids]);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.map((id) => byId.get(id)).filter(Boolean);
+};
+
 /**
  * Lay nhanh lowestAsk / highestBid hien tai (dung cho WebSocket push).
  */

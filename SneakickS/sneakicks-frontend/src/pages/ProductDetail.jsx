@@ -8,8 +8,11 @@ import OrderBook from "../components/OrderBook.jsx";
 import TradePanel from "../components/TradePanel.jsx";
 import RecentSales from "../components/RecentSales.jsx";
 import ProductImage from "../components/ProductImage.jsx";
+import RecRow from "../components/RecRow.jsx";
+import * as recApi from "../api/recommendations";
 import socket from "../realtime/socket";
 import useProductViewTracking from "../hooks/useProductViewTracking";
+import { flush, getSessionId } from "../lib/tracking";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useToast } from "../contexts/ToastContext.jsx";
 import { formatDate, formatMoney, premiumPct } from "../lib/format";
@@ -337,6 +340,26 @@ const ProductDetail = () => {
         <h3 className="font-semibold text-ink mb-3">Order book · size {size || "—"}</h3>
         <OrderBook bids={book.bids} asks={book.asks} />
       </div>
+
+      <RecRow
+        title="Similar products"
+        subtitle={`Matched on silhouette, brand, colorway and price with ${product.name}`}
+        source="rec_similar"
+        load={() => recApi.getSimilar(id, { limit: 12 })}
+        deps={[id]}
+        showReason
+      />
+
+      <RecRow
+        title="Recently viewed"
+        source="rec_recent"
+        load={async () => {
+          await flush();
+          return recApi.getRecentlyViewed({ session_id: getSessionId(), limit: 12, exclude: id });
+        }}
+        deps={[id]}
+        hideWhenEmpty
+      />
     </div>
   );
 };
